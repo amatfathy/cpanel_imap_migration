@@ -1,6 +1,7 @@
 [% WRAPPER '_assets/master.html.tt'
   app_key = 'migrate_email'
-  page_title = 'Migrate Email'
+  page_title = 'Email Migration'
+  page_styles_list = ['migrate_email.css']
 -%]
 
 [%
@@ -16,11 +17,139 @@
       </p>
 
       <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
         <strong>Gmail Users:</strong> You must enable 2-Factor Authentication and create an App Password. 
         Regular Gmail passwords will not work. 
-        <a href="https://support.google.com/accounts/answer/185833" target="_blank">Learn how to create App Passwords</a>
+        <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener">Learn how to create App Passwords</a>
       </div>
 
       <div class="section">
-        <h3>Sign into the email account you want to migrate</h3>
-        <form action="retrieve-success.html.tt" metho
+        <h3><i class="fas fa-envelope"></i> Source Email Account (What to migrate FROM)</h3>
+        <form action="retrieve-success.html.tt" method="post" id="migrationForm" class="form-horizontal">
+
+          <div class="form-group">
+            <label for="remoteEmail" class="col-sm-3 control-label">Email address</label>
+            <div class="col-sm-6">
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fas fa-at"></i></span>
+                <input name="remoteEmail" type="email" id="remoteEmail" class="form-control" placeholder="your.email@gmail.com" required autofocus>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="remotePassword" class="col-sm-3 control-label">Password</label>
+            <div class="col-sm-6">
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fas fa-key"></i></span>
+                <input name="remotePassword" type="password" id="remotePassword" class="form-control" placeholder="App Password (for Gmail) or regular password" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mailService" class="col-sm-3 control-label">Email Service</label>
+            <div class="col-sm-6">
+              <select name="mailService" class="form-control" id="mailService" onchange="toggleCustomFields()">
+              [% FOREACH service IN services.data %]
+                [% IF service == 'gmail' %]
+                  <option value="[% service %]">Gmail</option>
+                [% ELSIF service == 'custom_imap_ssl' %]
+                  <option value="[% service %]">Custom IMAP Server (SSL/TLS)</option>
+                [% ELSIF service == 'custom_imap_plain' %]
+                  <option value="[% service %]">Custom IMAP Server (No SSL)</option>
+                [% END %]
+              [% END %]
+              </select>
+            </div>
+          </div>
+
+          <!-- Custom IMAP fields (hidden by default) -->
+          <div id="customFields" style="display: none;">
+            <div class="form-group">
+              <label for="customServer" class="col-sm-3 control-label">IMAP Server</label>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <span class="input-group-addon"><i class="fas fa-server"></i></span>
+                  <input name="customServer" type="text" id="customServer" class="form-control" placeholder="mail.yourprovider.com">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="customPort" class="col-sm-3 control-label">IMAP Port</label>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <span class="input-group-addon"><i class="fas fa-plug"></i></span>
+                  <input name="customPort" type="number" id="customPort" class="form-control" placeholder="993" value="993">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <h3><i class="fas fa-download"></i> Destination Email Account (Where to migrate TO)</h3>
+          
+          <div class="form-group">
+            <label for="localEmail" class="col-sm-3 control-label">Select cPanel email account:</label>
+            <div class="col-sm-6">
+              <select name="localEmail" class="form-control" required>
+                <option value="">-- Select Email Account --</option>
+                [% FOREACH address IN email_address.data %]
+                <option value="[%address.email %]">[%address.email %]</option>
+                [% END %]
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="localPassword" class="col-sm-3 control-label">cPanel Email Password</label>
+            <div class="col-sm-6">
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fas fa-lock"></i></span>
+                <input name="localPassword" type="password" id="localPassword" class="form-control" placeholder="Password for your cPanel email account" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col-sm-offset-3 col-sm-6">
+              <button class="btn btn-primary btn-lg" type="submit">
+                <i class="fas fa-paper-plane"></i> Start Migration
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+    function toggleCustomFields() {
+        var serviceSelect = document.getElementById('mailService');
+        var customFields = document.getElementById('customFields');
+        
+        if (serviceSelect.value === 'custom_imap_ssl' || serviceSelect.value === 'custom_imap_plain') {
+            customFields.style.display = 'block';
+            document.getElementById('customServer').required = true;
+            
+            // Update port placeholder based on SSL selection
+            var portField = document.getElementById('customPort');
+            if (serviceSelect.value === 'custom_imap_ssl') {
+                portField.placeholder = '993';
+                portField.value = '993';
+            } else {
+                portField.placeholder = '143';
+                portField.value = '143';
+            }
+        } else {
+            customFields.style.display = 'none';
+            document.getElementById('customServer').required = false;
+        }
+    }
+    
+    // Initialize on page load
+    toggleCustomFields();
+    </script>
+
+[% END %]
