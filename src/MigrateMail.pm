@@ -12,6 +12,37 @@ use Cpanel::API::Email      (); # For validating email accounts
 
 our $_services_file = '/usr/local/cpanel/etc/services.json';
 
+sub check_destination_quota {
+    my ( $args, $result ) = @_;
+    my $localuser = $args->get('localEmail');
+    
+    # Get email account quota information
+    my $quota_info = Cpanel::API::Email::get_pop_quota({'email' => $localuser});
+    
+    if( $quota_info && $quota_info->{data} ) {
+        my $quota_limit = $quota_info->{data}->{quota} || 0;
+        my $quota_used = $quota_info->{data}->{used} || 0;
+        my $quota_available = $quota_limit - $quota_used;
+        
+        # Convert to human readable
+        my $limit_gb = sprintf("%.2f", $quota_limit / 1024);
+        my $used_gb = sprintf("%.2f", $quota_used / 1024);
+        my $available_gb = sprintf("%.2f", $quota_available / 1024);
+        
+        return {
+            'limit_mb' => $quota_limit,
+            'used_mb' => $quota_used,
+            'available_mb' => $quota_available,
+            'limit_gb' => $limit_gb,
+            'used_gb' => $used_gb,
+            'available_gb' => $available_gb,
+            'has_space' => ($quota_available > 1024) # At least 1GB free
+        };
+    }
+    
+    return undef;
+}
+
 sub domigrateuser {
 
     my ( $args, $result ) = @_;
@@ -56,6 +87,14 @@ sub domigrateuser {
     
     if( !$account_exists ) {
         $result->error( "Destination email account '$localuser' does not exist in cPanel. Please create it first." );
+        return;
+    }
+
+    # NEW: Check destination quota before starting
+    my $quota_check = check_destination_quota($args, $result);
+    
+    if( $quota_check && !$quota_check->{has_space} ) {
+        $result->error( "Insufficient space in destination mailbox. Available: $quota_check->{available_gb}GB, Used: $quota_check->{used_gb}GB of $quota_check->{limit_gb}GB total. Please free up space or increase quota before migration." );
         return;
     }
 
@@ -128,7 +167,14 @@ sub domigrateuser {
         return;
     }
 
-    # Build full migration command
+    # Add quota warning for migrations
+    my @quota_options = ();
+    if( $quota_check && $quota_check->{available_mb} < 5120 ) { # Less than 5GB free
+        push @quota_options, '--maxsize', '25000000'; # Limit individual messages to 25MB
+        push @quota_options, '--skipmess', 'LARGER than 25000000'; # Skip very large messages
+    }
+
+    # Build full migration command with quota considerations
     my @defaultoptions = ( 
         '--automap', 
         '--syncinternaldates', 
@@ -137,10 +183,11 @@ sub domigrateuser {
         '--exclude', 'All Mail|Spam|Trash|Deleted Items|Junk|Draft',
         '--allowsizemismatch',
         '--logdir', '/tmp',
-        '--logfile', "imapsync_" . time() . '_' . $ . '.txt',
+        '--logfile', "imapsync_" . time() . '_' . $$ . '.txt',
         '--timeout1', '120',
         '--timeout2', '120',
-        '--nofoldersizes'  # Skip folder size calculation for speed
+        '--nofoldersizes',  # Skip folder size calculation for speed
+        @quota_options      # Add quota-aware options
     );
     
     # Add SSL for source only if configured
@@ -184,12 +231,35 @@ sub domigrateuser {
         $transferred = $1;
     }
     
-    $result->data({
-        'status' => 'success',
-        'messages_transferred' => $transferred,
-        'source_account' => $remoteuser,
-        'destination_account' => $localuser
-    });
+    # After successful migration, report final usage
+    if( $quota_check ) {
+        my $final_quota = check_destination_quota($args, $result);
+        if( $final_quota ) {
+            $result->data({
+                'status' => 'success',
+                'messages_transferred' => $transferred,
+                'source_account' => $remoteuser,
+                'destination_account' => $localuser,
+                'quota_before' => "$quota_check->{used_gb}GB",
+                'quota_after' => "$final_quota->{used_gb}GB",
+                'quota_limit' => "$final_quota->{limit_gb}GB"
+            });
+        } else {
+            $result->data({
+                'status' => 'success',
+                'messages_transferred' => $transferred,
+                'source_account' => $remoteuser,
+                'destination_account' => $localuser
+            });
+        }
+    } else {
+        $result->data({
+            'status' => 'success',
+            'messages_transferred' => $transferred,
+            'source_account' => $remoteuser,
+            'destination_account' => $localuser
+        });
+    }
     
     return 1;
 }
