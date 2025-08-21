@@ -1,0 +1,21 @@
+{
+    "version": "1.0",
+    "uninstall_steps": [
+        {
+            "type": "remove_file",
+            "path": "/usr/local/cpanel/Cpanel/API/MigrateMail.pm"
+        },
+        {
+            "type": "remove_file", 
+            "path": "/usr/local/cpanel/etc/services.json"
+        },
+        {
+            "type": "remove_directory",
+            "path": "/usr/local/cpanel/base/frontend/jupiter/migrate_email"
+        },
+        {
+            "type": "script",
+            "script": "cleanup.sh"
+        }
+    ]
+}

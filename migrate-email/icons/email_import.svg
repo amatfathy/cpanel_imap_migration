@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#4a90e2" stroke="#357abd" stroke-width="2"/>
+  
+  <!-- Email envelope -->
+  <rect x="16" y="22" width="32" height="20" rx="2" fill="white" stroke="#357abd" stroke-width="1.5"/>
+  
+  <!-- Envelope flap -->
+  <path d="M17 23 L32 32 L47 23" stroke="#357abd" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Migration arrow -->
+  <path d="M52 15 L56 20 L52 25" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="47" y1="20" x2="56" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- IMAP text on top of envelope -->
+  <text x="32" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#ffffffff" font-weight="bold">IMAP</text>
+  
+  <!-- text at bottom -->
+  <text x="32" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="white" font-weight="bold">MIGRATION</text>
+</svg>

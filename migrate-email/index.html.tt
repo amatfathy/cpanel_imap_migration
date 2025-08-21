@@ -1,0 +1,26 @@
+[% WRAPPER '_assets/master.html.tt'
+  app_key = 'migrate_email'
+  page_title = 'Migrate Email'
+-%]
+
+[%
+  SET CPANEL.CPVAR.dprefix = "../"
+  email_address = execute("Email", "list_pops")
+  services = execute("MigrateMail", "services")
+-%]
+
+    <div class="body-content">
+
+      <p id="descMigrateEmail" class="description">
+        [% locale.maketext("Migrate your email messages from Gmail or other IMAP services to your cPanel hosting account.") %]
+      </p>
+
+      <div class="alert alert-info">
+        <strong>Gmail Users:</strong> You must enable 2-Factor Authentication and create an App Password. 
+        Regular Gmail passwords will not work. 
+        <a href="https://support.google.com/accounts/answer/185833" target="_blank">Learn how to create App Passwords</a>
+      </div>
+
+      <div class="section">
+        <h3>Sign into the email account you want to migrate</h3>
+        <form action="retrieve-success.html.tt" metho

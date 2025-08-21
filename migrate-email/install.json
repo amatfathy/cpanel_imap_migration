@@ -1,0 +1,21 @@
+{
+	"icon": "icons/email_import.svg",
+	"group_id": "email",
+	"order": 10000,
+	"name": "Email Migration",
+	"description": "Migrate emails from Gmail and IMAP services to cPanel",
+	"type": "link",
+	"id": "migrate_email",
+	"uri": "migrate_email/index.html",
+	"featuremanager": 1,
+	"version": "1.0",
+	"author": "cPanel, Inc.",
+	"requires": {
+		"cpanel_version": "11.70.0"
+	},
+	"icons": {
+		"16": "icons/email_import_16.png",
+		"32": "icons/email_import_32.png", 
+		"64": "icons/email_import_64.png"
+	}
+}
